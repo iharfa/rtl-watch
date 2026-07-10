@@ -1,0 +1,11 @@
+[
+  {
+    "date": "2026-07-10",
+    "macrostructure": "none (app UI, component-scope)",
+    "theme": "custom",
+    "theme_axes": "dark / grotesk-sans / warm",
+    "vibe": "dark utilitarian speed-audit instrument",
+    "enrichment": "none",
+    "brief": "BusWatch · crowdsourced RTL bus speed audit PWA"
+  }
+]

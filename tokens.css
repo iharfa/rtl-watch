@@ -1,0 +1,39 @@
+/* Hallmark · component: app-ui · genre: atmospheric · theme: custom
+ * vibe: dark utilitarian speed-audit instrument
+ * paper: oklch(16% 0.012 250) · accent: oklch(80% 0.15 80) amber (warm)
+ * display: Space Grotesk · data: JetBrains Mono · axes: dark / grotesk-sans / warm
+ * pre-emit critique: P4 H5 E4 S4 R5 V4
+ */
+:root {
+  --color-paper: oklch(16% 0.012 250);
+  --color-paper-2: oklch(20% 0.014 250);
+  --color-paper-3: oklch(25% 0.016 250);
+  --color-line: oklch(32% 0.015 250);
+  --color-ink: oklch(93% 0.005 250);
+  --color-ink-dim: oklch(66% 0.012 250);
+  --color-accent: oklch(80% 0.15 80);
+  --color-accent-ink: oklch(20% 0.05 80);
+  /* semantic — over-limit red and within-limit green are data colors, not decoration */
+  --color-over: oklch(62% 0.22 25);
+  --color-ok: oklch(74% 0.14 150);
+  --color-focus: oklch(80% 0.15 80);
+
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+
+  --text-sm: 0.8125rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+  --text-huge: clamp(4rem, 22vw, 7rem);
+
+  --radius: 8px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 120ms;
+}
