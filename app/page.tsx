@@ -8,6 +8,7 @@ const CONSENT_KEY = 'buswatch-consent-v1';
 export default function Home() {
   const router = useRouter();
   const [consented, setConsented] = useState<boolean | null>(null);
+  const [native, setNative] = useState(true); // assume native until mount so the banner never flashes in the APK
   const [vehicle, setVehicle] = useState<Vehicle>('bus');
   const [label, setLabel] = useState('');
   const [routeId, setRouteId] = useState(ROUTES[0].id);
@@ -16,6 +17,7 @@ export default function Home() {
 
   useEffect(() => {
     setConsented(localStorage.getItem(CONSENT_KEY) === 'yes');
+    setNative(!!(window as any).Capacitor?.isNativePlatform?.());
   }, []);
 
   if (consented === null) return null;
@@ -48,7 +50,23 @@ export default function Home() {
         <h1>BusWatch</h1>
         <a href="/trips/">My trips</a>
       </header>
-      <p className="dim">Board, pick what you&apos;re riding, start recording. Keep the screen on — mounted or lap-propped works best.</p>
+      <p className="dim">Board, pick what you&apos;re riding, start recording.</p>
+
+      {!native && (
+        <div className="card" style={{ borderColor: 'var(--color-accent)' }}>
+          <p className="small" style={{ margin: 0 }}>
+            <strong>Browser limitation:</strong> recording stops if the screen turns off or you switch away from
+            the browser. Keep the app open and the screen on for the whole trip — mounted or lap-propped works best.
+          </p>
+          <a
+            className="btn btn-quiet"
+            style={{ marginTop: 12, textAlign: 'center', padding: 12, whiteSpace: 'normal' }}
+            href="https://github.com/iharfa/rtl-watch/releases/latest"
+          >
+            Get the Android app — records with the screen off
+          </a>
+        </div>
+      )}
 
       <div className="card" style={{ flex: 1 }}>
         <div className="seg-toggle" role="radiogroup" aria-label="Vehicle">

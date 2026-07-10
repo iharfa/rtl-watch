@@ -117,10 +117,37 @@ export async function startTrip(opts: {
 
   let watchId: number | null = null;
   let simTimer: ReturnType<typeof setInterval> | null = null;
+  let bgWatcherId: string | null = null;
+  // In the Capacitor APK, the injected bridge exposes the background-geolocation
+  // plugin: an Android foreground service that keeps fixes coming with the
+  // screen off or the app backgrounded — the pocket-logging upgrade (PRD Phase 3).
+  const cap = (window as any).Capacitor;
+  const bg = cap?.isNativePlatform?.() ? cap.registerPlugin('BackgroundGeolocation') : null;
 
   if (opts.sim) {
     const line = (opts.routeId && routeById(opts.routeId)?.line) || TAXI_SIM_LINE;
     simTimer = simulate(line, handlePosition);
+  } else if (bg) {
+    bg.addWatcher(
+      {
+        backgroundTitle: 'BusWatch — recording trip',
+        backgroundMessage: 'Logging position. End the trip in the app.',
+        requestPermissions: true,
+        stale: false,
+        distanceFilter: 0,
+      },
+      (loc: any, err: any) => {
+        if (err) {
+          state.error = err.message ?? String(err);
+          emit();
+          return;
+        }
+        if (loc) handlePosition(loc.latitude, loc.longitude, loc.speed ?? null, loc.bearing ?? null, loc.accuracy ?? 9999);
+      }
+    ).then((id: string) => {
+      bgWatcherId = id;
+      if (stopped) bg.removeWatcher({ id });
+    });
   } else {
     watchId = navigator.geolocation.watchPosition(
       (p) =>
@@ -139,6 +166,7 @@ export async function startTrip(opts: {
       stopped = true;
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       if (simTimer !== null) clearInterval(simTimer);
+      if (bg && bgWatcherId) await bg.removeWatcher({ id: bgWatcherId }).catch(() => {});
       document.removeEventListener('visibilitychange', onVisible);
       wakeLock?.release().catch(() => {});
       const durMs = lastKept?.t ?? 0;

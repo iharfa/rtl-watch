@@ -11,6 +11,8 @@ export default function TripPage() {
   const [live, setLive] = useState<LiveState | null>(null);
   const [fixes, setFixes] = useState<Fix[]>([]);
   const [ending, setEnding] = useState(false);
+  const [native, setNative] = useState(false);
+  useEffect(() => setNative(!!(window as any).Capacitor?.isNativePlatform?.()), []);
 
   useEffect(() => {
     if (trackerRef.current) return;
@@ -63,7 +65,7 @@ export default function TripPage() {
       <div className="statusline">
         <span>{live?.fixCount ?? 0} fixes · {live?.discardedCount ?? 0} dropped</span>
         <span>{live?.overCount ?? 0} over</span>
-        <span>{live?.wakeLock ? 'WAKE LOCK ON' : 'WAKE LOCK OFF'}</span>
+        <span>{native ? 'BACKGROUND SERVICE' : live?.wakeLock ? 'WAKE LOCK ON' : 'WAKE LOCK OFF'}</span>
       </div>
       {live?.error && (
         <div className="card small" style={{ borderColor: 'var(--color-over)' }}>

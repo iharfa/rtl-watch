@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">BusWatch</string>
+    <string name="title_activity_main">BusWatch</string>
+    <string name="package_name">mv.buswatch</string>
+    <string name="custom_url_scheme">mv.buswatch</string>
+</resources>
