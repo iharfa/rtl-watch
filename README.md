@@ -34,16 +34,22 @@ Geometry and limits in `lib/route.ts` are approximate. Only the Sinamalé
 Bridge 50 km/h is publicly reported; everything else awaits the field survey
 (PRD 7.3). Do not publish findings from this dataset.
 
-## Cloud sync setup (Supabase)
+## Cloud sync (Neon + Vercel)
 
-1. Create a free project at supabase.com.
-2. Paste `db/schema.sql` into the SQL editor and run it.
-3. Copy `.env.local.example` to `.env.local`, fill in the project URL and anon key.
-4. Rebuild. Trips page shows sync status; finished trips upload automatically.
+Trips upload through `/api/sync` (a Vercel function) into Neon Postgres — the
+phone never holds a database credential. Tables are auto-created on the first
+upload.
 
-The anon key can only INSERT (RLS). Trend views for analysts:
-`segment_rates` (per-segment speeding rate) and `hourly_rates` (by hour of day),
-both excluding demo trips — query them with the service role.
+1. Deployed on Vercel; connect the **Neon integration** to the project so
+   `DATABASE_URL` is injected (Vercel dashboard → Storage/Integrations → Neon).
+2. For local dev, copy `.env.local.example` to `.env.local` with your Neon
+   connection string.
+3. Run the views in `db/schema.sql` once in the Neon SQL editor for trend
+   queries: `segment_rates` (per-segment speeding rate) and `hourly_rates`
+   (by hour of day and vehicle), both excluding demo trips.
+
+Without a `DATABASE_URL` the app still works fully offline; the trips page
+reports "Cloud sync: off".
 
 ## Roadmap (PRD)
 

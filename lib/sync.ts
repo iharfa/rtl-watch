@@ -1,12 +1,7 @@
-// Cloud sync — uploads finished trips to Supabase so trends can be analysed
-// off-device. Write-only from the app: the anon key can INSERT but never read
-// anyone's traces back (see db/schema.sql RLS policies).
+// Cloud sync — uploads finished trips to /api/sync (Vercel function → Neon
+// Postgres) so trends can be analysed off-device. The phone never holds a
+// database credential.
 import { getFixes, getTrips, putTrip, type Trip } from './db';
-
-const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-export const syncEnabled = !!(URL && KEY);
 
 // Pseudonymous contributor id (PRD 9) — random, stored only on this device.
 function contributorId(): string {
@@ -18,62 +13,24 @@ function contributorId(): string {
   return id;
 }
 
-async function insert(table: string, rows: unknown): Promise<void> {
-  const res = await fetch(`${URL}/rest/v1/${table}`, {
-    method: 'POST',
-    headers: {
-      apikey: KEY!,
-      Authorization: `Bearer ${KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal,resolution=ignore-duplicates',
-    },
-    body: JSON.stringify(rows),
-  });
-  if (!res.ok) throw new Error(`${table}: ${res.status} ${await res.text()}`);
-}
+export class SyncOffError extends Error {}
 
 async function uploadTrip(trip: Trip): Promise<void> {
   const fixes = await getFixes(trip.id);
-  await insert('trips', {
-    id: trip.id,
-    contributor: contributorId(),
-    vehicle: trip.vehicle ?? 'bus',
-    label: trip.label || null,
-    route_id: trip.routeId,
-    bus_id: trip.busId || null,
-    started_at: new Date(trip.startedAt).toISOString(),
-    ended_at: trip.endedAt ? new Date(trip.endedAt).toISOString() : null,
-    sim: trip.sim,
-    platform: trip.platform ?? 'unknown',
-    fix_count: trip.fixCount,
-    over_count: trip.overCount,
-    discarded_count: trip.discardedCount,
+  const res = await fetch('/api/sync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ trip: { ...trip, contributor: contributorId() }, fixes }),
   });
-  if (fixes.length) {
-    await insert(
-      'fixes',
-      fixes.map((f) => ({
-        trip_id: f.tripId,
-        t: f.t,
-        lat: f.lat,
-        lng: f.lng,
-        speed_kmh: f.speedKmh,
-        heading: f.heading,
-        accuracy: f.accuracy,
-        seg_id: f.segId,
-        limit_kmh: f.limitKmh,
-        over: f.over,
-        stationary: f.stationary,
-      }))
-    );
-  }
+  if (res.status === 503) throw new SyncOffError();
+  if (!res.ok) throw new Error(`sync ${res.status}`);
   trip.synced = true;
   await putTrip(trip);
 }
 
 // Upload every finished, unsynced trip. Returns how many went up.
 export async function syncPending(): Promise<number> {
-  if (!syncEnabled || !navigator.onLine) return 0;
+  if (!navigator.onLine) return 0;
   const pending = (await getTrips()).filter((t) => t.status === 'done' && !t.synced);
   let n = 0;
   for (const t of pending) {

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import TripMap from '@/components/TripMap';
 import { deleteTrip, getFixes, getTrips, type Fix, type Trip } from '@/lib/db';
 import { routeById } from '@/lib/route';
-import { syncEnabled, syncPending } from '@/lib/sync';
+import { SyncOffError, syncPending } from '@/lib/sync';
 
 function fmtDur(ms: number) {
   const m = Math.floor(ms / 60000);
@@ -14,7 +14,8 @@ export default function TripsPage() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [selected, setSelected] = useState<Trip | null>(null);
   const [fixes, setFixes] = useState<Fix[]>([]);
-  const [syncMsg, setSyncMsg] = useState(syncEnabled ? 'Cloud sync: idle' : 'Cloud sync: off (not configured)');
+  const [syncMsg, setSyncMsg] = useState('Cloud sync: idle');
+  const [syncOff, setSyncOff] = useState(false);
 
   async function load(selectId?: string | null) {
     const all = (await getTrips()).sort((a, b) => b.startedAt - a.startedAt);
@@ -24,14 +25,18 @@ export default function TripsPage() {
   }
 
   async function runSync() {
-    if (!syncEnabled) return;
     setSyncMsg('Cloud sync: uploading…');
     try {
       const n = await syncPending();
       setSyncMsg(n > 0 ? `Cloud sync: ${n} trip${n === 1 ? '' : 's'} uploaded` : 'Cloud sync: up to date');
       if (n > 0) load();
-    } catch {
-      setSyncMsg('Cloud sync: failed — will retry when online');
+    } catch (e) {
+      if (e instanceof SyncOffError) {
+        setSyncOff(true);
+        setSyncMsg('Cloud sync: off (no database configured)');
+      } else {
+        setSyncMsg('Cloud sync: failed — will retry when online');
+      }
     }
   }
 
@@ -104,7 +109,7 @@ export default function TripsPage() {
                 {t.vehicle === 'taxi' ? 'TAXI' : t.vehicle === 'other' ? 'OTHER' : 'BUS'}
               </span>
               <span className="badge">{t.overCount} over</span>
-              {syncEnabled && t.status === 'done' && (
+              {!syncOff && t.status === 'done' && (
                 <span className="badge">{t.synced ? 'SYNCED' : 'QUEUED'}</span>
               )}
             </span>
